@@ -100,6 +100,7 @@ fun drawFrame(window:Long, gameObjectList:MutableList<GameObject>, defaultShader
 
 	// Draw each object
 	for (gameObject in gameObjectList) {
+		gameObject.setOrientation(50,-50, 0.0f)
 		if (gameObject.shader != null) {
 			glUseProgram(gameObject.shader)
 			gameObject.drawObject(wWidth.get(), wHeight.get(), gameObject.shader)

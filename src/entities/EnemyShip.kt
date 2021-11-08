@@ -1,6 +1,6 @@
 package entities
 
-class EnemyShip : PrimaryObject(100, 10.0f, 20.0f) {
+class EnemyShip : PrimaryObject(100, 45.0f, 60.0f) {
 
     // Declare drawing values for the Drawable interface
     override val vertexData:FloatArray = floatArrayOf(

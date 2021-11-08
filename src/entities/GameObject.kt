@@ -5,7 +5,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 abstract class GameObject (val shader:Int?, val width:Float = 1.0f, val height:Float = 1.0f,
-                           var xPos:Int = 0, var yPos:Int = 0, var rotation:Float = 0.0f) {
+                           var xPos:Float = 0.0f, var yPos:Float = 0.0f, var rotation:Float = 0.0f) {
 
     abstract val vertexData:FloatArray
     abstract val indices:IntArray
@@ -47,8 +47,8 @@ abstract class GameObject (val shader:Int?, val width:Float = 1.0f, val height:F
             0.0f, 0.0f, 0.0f, 1.0f
         )
         val translate = floatArrayOf(
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
+            1.0f, 0.0f, 0.0f, xPos/wWidth,
+            0.0f, 1.0f, 0.0f, yPos/wHeight,
             0.0f, 0.0f, 1.0f, 0.0f,
             0.0f, 0.0f, 0.0f, 1.0f
         )
@@ -68,12 +68,19 @@ abstract class GameObject (val shader:Int?, val width:Float = 1.0f, val height:F
     }
 
     fun setOrientation(x:Int, y:Int, rot:Float) {
+        setOrientation(x.toFloat(), y.toFloat(), rot)
+    }
+    fun setOrientation(x:Float, y:Float, rot:Float) {
         xPos = x
         yPos = y
         rotation = rot
     }
 
-    fun move(xSpeed:Int, ySpeed:Int) {
+    fun move(xSpeed: Int, ySpeed:Int) {
+        move(xSpeed.toFloat(), ySpeed.toFloat())
+    }
+
+    fun move(xSpeed:Float, ySpeed:Float) {
         // xPos and yPos will be measured in units, defined elsewhere by the window renderer
         // Speeds will be in units/frame
         xPos += xSpeed
