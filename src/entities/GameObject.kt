@@ -1,6 +1,7 @@
 package entities
 
-import org.lwjgl.opengl.GL45
+import org.lwjgl.opengl.GL20
+import org.lwjgl.opengl.GL45.*
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -12,31 +13,32 @@ abstract class GameObject (val shader:Int?, val width:Float = 1.0f, val height:F
 
     fun drawObject(wWidth:Int, wHeight:Int, shaderProgram:Int) {
         // Create buffer/array objects
-        val vbo = GL45.glGenBuffers()
-        val vao = GL45.glGenVertexArrays()
-        val ebo = GL45.glGenBuffers()
+        val vbo = glGenBuffers()
+        val vao = glGenVertexArrays()
+        val ebo = glGenBuffers()
 
         // Bind data to buffers
-        GL45.glBindVertexArray(vao)
+        glBindVertexArray(vao)
 
-        GL45.glBindBuffer(GL45.GL_ARRAY_BUFFER, vbo)
-        GL45.glBufferData(GL45.GL_ARRAY_BUFFER, vertexData, GL45.GL_DYNAMIC_DRAW)
+        glBindBuffer(GL_ARRAY_BUFFER, vbo)
+        glBufferData(GL_ARRAY_BUFFER, vertexData, GL_DYNAMIC_DRAW)
 
-        GL45.glBindBuffer(GL45.GL_ELEMENT_ARRAY_BUFFER, ebo)
-        GL45.glBufferData(GL45.GL_ELEMENT_ARRAY_BUFFER, indices, GL45.GL_DYNAMIC_DRAW)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices, GL_DYNAMIC_DRAW)
 
         // Attribute pointers
         // Position attribute
-        GL45.glVertexAttribPointer(0, 3, GL45.GL_FLOAT, false, 24, 0)
-        GL45.glEnableVertexAttribArray(0)
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, 24, 0)
+        glEnableVertexAttribArray(0)
         // Colour attribute
-        GL45.glVertexAttribPointer(1, 3, GL45.GL_FLOAT, false, 24, 12)
-        GL45.glEnableVertexAttribArray(1)
+        glVertexAttribPointer(1, 3, GL_FLOAT, false, 24, 12)
+        glEnableVertexAttribArray(1)
 
-        // Create transformation matrices
+        val wRatio = wHeight/wWidth.toFloat()
+
         val scale = floatArrayOf(
-            (width / wWidth), 0.0f, 0.0f, 0.0f,
-            0.0f, (height / wHeight), 0.0f, 0.0f,
+            width/(wRatio*400), 0.0f, 0.0f, 0.0f,
+            0.0f, height/(wRatio*400), 0.0f, 0.0f,
             0.0f, 0.0f, 1.0f, 0.0f,
             0.0f, 0.0f, 0.0f, 1.0f
         )
@@ -52,38 +54,47 @@ abstract class GameObject (val shader:Int?, val width:Float = 1.0f, val height:F
             0.0f, 0.0f, 1.0f, 0.0f,
             0.0f, 0.0f, 0.0f, 1.0f
         )
+        val view = floatArrayOf(
+            wHeight.toFloat()/wWidth.toFloat(), 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f
+        )
 
         // Apply transformations
-        val scaleLoc = GL45.glGetUniformLocation(shaderProgram, "scale")
-        GL45.glUniformMatrix4fv(scaleLoc, true, scale)
-        val rotateLoc = GL45.glGetUniformLocation(shaderProgram, "rotate")
-        GL45.glUniformMatrix4fv(rotateLoc, true, rotate)
-        val translateLoc = GL45.glGetUniformLocation(shaderProgram, "translate")
-        GL45.glUniformMatrix4fv(translateLoc, true, translate)
+        val scaleLoc = glGetUniformLocation(shaderProgram, "scale")
+        glUniformMatrix4fv(scaleLoc, true, scale)
+        val rotateLoc = glGetUniformLocation(shaderProgram, "rotate")
+        glUniformMatrix4fv(rotateLoc, true, rotate)
+        val translateLoc = glGetUniformLocation(shaderProgram, "translate")
+        glUniformMatrix4fv(translateLoc, true, translate)
+        val viewLoc = glGetUniformLocation(shaderProgram, "view")
+        glUniformMatrix4fv(viewLoc, true, view)
 
         // Draw object
-        GL45.glBindVertexArray(vao)
-        GL45.glDrawElements(GL45.GL_TRIANGLES, indices.size, GL45.GL_UNSIGNED_INT, 0)
-        GL45.glBindVertexArray(0)
+        glBindVertexArray(vao)
+        glDrawElements(GL_TRIANGLES, indices.size, GL_UNSIGNED_INT, 0)
+        glBindVertexArray(0)
     }
 
-    fun setOrientation(x:Int, y:Int, rot:Float) {
+    fun setOrientation(x:Int, y:Int, rot:Float = rotation) {
         setOrientation(x.toFloat(), y.toFloat(), rot)
     }
-    fun setOrientation(x:Float, y:Float, rot:Float) {
+    fun setOrientation(x:Float, y:Float, rot:Float = rotation) {
         xPos = x
         yPos = y
         rotation = rot
     }
 
-    fun move(xSpeed: Int, ySpeed:Int) {
-        move(xSpeed.toFloat(), ySpeed.toFloat())
+    fun move(xSpeed: Int, ySpeed:Int, rotChange:Float = 0.0f) {
+        move(xSpeed.toFloat(), ySpeed.toFloat(), rotChange)
     }
-
-    fun move(xSpeed:Float, ySpeed:Float) {
+    fun move(xSpeed:Float, ySpeed:Float, rotChange: Float = 0.0f) {
         // xPos and yPos will be measured in units, defined elsewhere by the window renderer
-        // Speeds will be in units/frame
+        // Move speeds will be in units/frame
+        // Rotation speed is entered as rad/s, and /60 allows for the 60fps
         xPos += xSpeed
         yPos += ySpeed
+        rotation += rotChange / 60
     }
 }

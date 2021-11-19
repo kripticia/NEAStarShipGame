@@ -5,20 +5,29 @@ import org.lwjgl.opengl.GL
 import org.lwjgl.opengl.GL45.*
 import org.lwjgl.opengl.GLUtil
 import org.lwjgl.system.MemoryUtil
+import kotlin.collections.ArrayList
 
 fun main() {
 	val window = createWindow()
-	val gameObjectList:MutableList<GameObject> = ArrayList()
 	val defaultShader = createDefaultShader()
-	glUseProgram(defaultShader)
+	val gameObjectList:MutableList<GameObject> = ArrayList()
+
 	glClearColor(0.0f, 0.0f, 0.1f, 1.0f)
 
-	// For testing purposes, can be removed at any point
-	gameObjectList.add(PlayerShip())
+	// Add ship for testing purposes, can be removed at any point
+	val playerShip = PlayerShip()
+	playerShip.setOrientation(100, -100)
+	gameObjectList.add(playerShip)
 
-	while (!glfwWindowShouldClose(window)){
-		// Main code will run in here
+	// Main code will run in here
+	while (!glfwWindowShouldClose(window)) {
+		// Draw the frame
 		drawFrame(window, gameObjectList, defaultShader)
+
+		// Spin/move player ship
+		playerShip.move(0, 3, 0.4f)
+
+		Thread.sleep(100/6.toLong())
 	}
 }
 
@@ -28,6 +37,7 @@ fun createWindow() : Long {
 	val window = glfwCreateWindow(600, 900, "Starship Game", MemoryUtil.NULL, MemoryUtil.NULL)
 	glfwShowWindow(window)
 
+	glfwSetKeyCallback(window) {_, key, scancode, action, mods -> processInput(key, scancode, action, mods)}
 	glfwSetFramebufferSizeCallback(window) { _, width, height -> glViewport(0, 0, width, height) }
 
 	glfwMakeContextCurrent(window)
@@ -35,6 +45,10 @@ fun createWindow() : Long {
 	GLUtil.setupDebugMessageCallback(System.out)
 
 	return window
+}
+
+fun processInput(key:Int, scancode:Int, action:Int, mods:Int){
+	TODO("Implement input processing")
 }
 
 fun createDefaultShader() : Int {
@@ -48,14 +62,14 @@ fun createDefaultShader() : Int {
 		
 		uniform mat4 scale;
 		uniform mat4 rotate;
+		uniform mat4 view;
 		uniform mat4 translate;
         
         void main () 
         {
-            gl_Position = translate * rotate * scale * vec4(pos, 1.0);
+            gl_Position = view * translate * rotate * scale * vec4(pos, 1.0);
             outColour = inColour;
         }
-        
         """.trimIndent()
 
 	val fsSource: String = """
@@ -100,7 +114,6 @@ fun drawFrame(window:Long, gameObjectList:MutableList<GameObject>, defaultShader
 
 	// Draw each object
 	for (gameObject in gameObjectList) {
-		gameObject.setOrientation(50,-50, 0.0f)
 		if (gameObject.shader != null) {
 			glUseProgram(gameObject.shader)
 			gameObject.drawObject(wWidth.get(), wHeight.get(), gameObject.shader)

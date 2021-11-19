@@ -10,6 +10,7 @@ class PlayerShip : PrimaryObject(100, 45.0f, 60.0f) {
         -1.0f, -1.0f, 0.7f,     0.0f, 1.0f, 0.0f,   // Bottom-left      (Left wingtip)
         1.0f, -1.0f, 0.7f,      0.0f, 1.0f, 0.0f    // Bottom-right     (Right wingtip)
     )
+
     override val indices: IntArray = intArrayOf(
         0, 1, 2,
         0, 1, 3
