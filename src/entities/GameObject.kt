@@ -1,13 +1,14 @@
 package entities
 
-import org.lwjgl.opengl.GL20
 import org.lwjgl.opengl.GL45.*
 import kotlin.math.cos
 import kotlin.math.sin
 
-abstract class GameObject (val shader:Int?, val width:Float = 1.0f, val height:Float = 1.0f,
-                           var xPos:Float = 0.0f, var yPos:Float = 0.0f, var rotation:Float = 0.0f) {
-
+abstract class GameObject (private val width:Float = 1.0f, private val height:Float = 1.0f,
+                           val size:Float = 5.0f, val shader:Int?,
+                           var xPos:Float = 0.0f, var yPos:Float = 0.0f, var rotation:Float = 0.0f, // Orientation
+                           var xSpd:Float = 0.0f, var ySpd:Float = 0.0f)                            // Default speeds
+{
     abstract val vertexData:FloatArray
     abstract val indices:IntArray
 
@@ -89,7 +90,7 @@ abstract class GameObject (val shader:Int?, val width:Float = 1.0f, val height:F
     fun move(xSpeed: Int, ySpeed:Int, rotChange:Float = 0.0f) {
         move(xSpeed.toFloat(), ySpeed.toFloat(), rotChange)
     }
-    fun move(xSpeed:Float, ySpeed:Float, rotChange: Float = 0.0f) {
+    fun move(xSpeed:Float = xSpd, ySpeed:Float = ySpd, rotChange: Float = 0.0f) {
         // xPos and yPos will be measured in units, defined elsewhere by the window renderer
         // Move speeds will be in units/frame
         // Rotation speed is entered as rad/s, and /60 allows for the 60fps
@@ -97,4 +98,6 @@ abstract class GameObject (val shader:Int?, val width:Float = 1.0f, val height:F
         yPos += ySpeed
         rotation += rotChange / 60
     }
+
+    open fun defaultFun() {}  // Will be defined per subclass
 }

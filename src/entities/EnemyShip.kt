@@ -1,8 +1,13 @@
 package entities
 
-class EnemyShip : PrimaryObject(100, 45.0f, 60.0f) {
+class EnemyShip(xPos:Float, yPos:Float, var bulletCooldown:Int = 0) : PrimaryObject(100, 45.0f, 60.0f) {
 
-    // Declare drawing values for the Drawable interface
+    init {
+        this.ySpd = -2.5f
+        this.xPos = xPos
+        this.yPos = yPos
+    }
+
     override val vertexData:FloatArray = floatArrayOf(
         //   Position                Colour
         0.0f, -1.0f, 0.65f,      0.6f, 0.0f, 0.0f,   // Bottom-middle    (Front)
@@ -15,7 +20,21 @@ class EnemyShip : PrimaryObject(100, 45.0f, 60.0f) {
         0, 1, 3
     )
 
-    fun shoot() {
-        // Fire weapons on input
+    fun shoot() : Bullet? {
+        // NOTE that bulletCooldown is decreased outside this method, to run the cooldown automatically
+        val newBullet: Bullet?
+
+        if (this.bulletCooldown <= 0) {
+            // Shoot another bullet
+            newBullet = Bullet(this.xSpd, -20.0f)
+            newBullet.setOrientation(this.xPos, this.yPos)  // Place bullet under ship
+
+            // Reset shot cooldown
+            bulletCooldown = 20
+        }
+        else {
+            newBullet = null
+        }
+        return newBullet
     }
 }
