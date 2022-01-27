@@ -4,8 +4,8 @@ import org.lwjgl.opengl.GL45.*
 import kotlin.math.cos
 import kotlin.math.sin
 
-abstract class GameObject (private val width:Float = 1.0f, private val height:Float = 1.0f,
-                           val size:Float = 5.0f, val shader:Int?,
+abstract class GeneralObj (private val width:Float = 1.0f, private val height:Float = 1.0f,         // w/h for drawing
+                           val shader:Int?=null, val z:Float = 0.5f,                                // More for drawing
                            var xPos:Float = 0.0f, var yPos:Float = 0.0f, var rotation:Float = 0.0f, // Orientation
                            var xSpd:Float = 0.0f, var ySpd:Float = 0.0f)                            // Default speeds
 {
@@ -98,6 +98,4 @@ abstract class GameObject (private val width:Float = 1.0f, private val height:Fl
         yPos += ySpeed
         rotation += rotChange / 60
     }
-
-    open fun defaultFun() {}  // Will be defined per subclass
 }

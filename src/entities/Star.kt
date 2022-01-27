@@ -1,9 +1,8 @@
 package entities
 
-import rendering.Drawable
 import kotlin.math.sqrt
 
-class Star(z: Float = 0.0f) : GameObject(1.0f, 1.0f, 0.0f, null) {
+class Star : GeneralObj(1.0f, 1.0f, z=0.0f) {
 	private val val1 = sqrt(0.75).toFloat()   // Value represents (surd 3) / 2, used to calc exact
 												 // positions for hexagon, purely for ease of editing
 	override val vertexData = floatArrayOf(

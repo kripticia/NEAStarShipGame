@@ -16,7 +16,6 @@ fun main() {
 
 	// Main code will run in here
 	while (!glfwWindowShouldClose(window)) {
-
 		// Run the main in-game loop
 		inGameLoop(window, defaultShader)
 	}
@@ -90,10 +89,7 @@ fun createDefaultShader() : Int {
 	return shaderProgram
 }
 
-fun drawFrame(window:Long, gameObjectList:List<GameObject>, defaultShader:Int) {
-	// Draw the frame per loop
-	glClear(GL_COLOR_BUFFER_BIT)    // Background colour behind all objects
-
+fun drawObjects(window:Long, defaultShader:Int, objList:List<GeneralObj>) {
 	// Get window size
 	val wPreWidth = MemoryUtil.memAllocInt(1)
 	val wPreHeight = MemoryUtil.memAllocInt(1)
@@ -102,13 +98,13 @@ fun drawFrame(window:Long, gameObjectList:List<GameObject>, defaultShader:Int) {
 	val wHeight = wPreHeight.get()
 
 	// Draw each object
-	for (gameObject in gameObjectList) {
-		if (gameObject.shader != null) {
-			glUseProgram(gameObject.shader)
-			gameObject.drawObject(wWidth, wHeight, gameObject.shader)
+	for (obj in objList) {
+		if (obj.shader != null) {
+			glUseProgram(obj.shader)
+			obj.drawObject(wWidth, wHeight, obj.shader)
 			glUseProgram(defaultShader)
 		}
-		else {gameObject.drawObject(wWidth, wHeight, defaultShader)}
+		else {obj.drawObject(wWidth, wHeight, defaultShader)}
 	}
 
 	glfwPollEvents()
@@ -117,116 +113,114 @@ fun drawFrame(window:Long, gameObjectList:List<GameObject>, defaultShader:Int) {
 
 fun inGameLoop(window:Long, defaultShader:Int) {
 	// Initialise the in-game setting
-
 	// Object list can be created locally to save required params/args
-	var gameObjectList: MutableList<GameObject> = ArrayList()
+	var gameObjList: MutableList<GameObj> = ArrayList()
 
 	// Create the player's ship
 	val playerShip = PlayerShip(0f, -500f)
-	gameObjectList += playerShip
+	gameObjList.add(playerShip)
 
 	// TEMPORARY - Enemy ship to test with
 	val enemyShip = EnemyShip(0f, 500f)
-	enemyShip.xSpd = 3f
-	gameObjectList += enemyShip
+	gameObjList.add(enemyShip)
 
+	// Main cycle will run in here
 	while (!glfwWindowShouldClose(window) && playerShip.hp > 0) {
-		// Process all objects for this frame
-		// Create a buffer list for any newly made objects
-		val newObjectBuffer:MutableList<GameObject?> = ArrayList()
+		glClear(GL_COLOR_BUFFER_BIT)
 
-		for (currentObj in gameObjectList) {
-			// Check for certain objects with unique cases,
-			// otherwise run its default function
-			when (currentObj) {
-				is PlayerShip -> newObjectBuffer.add(pShipFun(playerShip, window))
-				is EnemyShip -> newObjectBuffer.add(eShipFun(enemyShip))
-				else -> currentObj.defaultFun()
-			}
+		gameObjList = processGameObjs(window, defaultShader, gameObjList)
+
+		// Check for pause
+		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+			TODO("Implement pause function")
 		}
-
-		// Remove any objects that are off-screen
-		gameObjectList = gameObjectList.filter{!(abs(it.xPos.toDouble()) > 450 || abs(it.yPos.toDouble()) > 1000)}.toMutableList()
-
-		// Add new objects to the game list
-		// Null objects are filtered and not added to gameObjectList
-		for (gameObject in newObjectBuffer.filterNotNull()) {
-			gameObjectList.add(gameObject)
-		}
-
-		// Check for any collisions
-		// gameObjectList = collisionChecks(gameObjectList)
-
-		// Draw the frame
-		drawFrame(window, gameObjectList, defaultShader)
 
 		// Limit to 60 fps
 		Thread.sleep(100/6.toLong())
 	}
 }
 
-fun collisionChecks (gameObjectList: List<GameObject>) : List<GameObject> {
-	// Create list of objects' data
-	for ((indexA, objA) in gameObjectList.withIndex()){
-		var indexB = indexA
+fun processGameObjs(window: Long, defaultShader:Int, gameObjListIn:List<GameObj>) : MutableList<GameObj> {
+	// Create a buffer list for any newly made objects
+	val newObjectBuffer:MutableList<GameObj?> = ArrayList()
+
+	for (currentObj in gameObjListIn) {
+		// Check for certain objects with unique cases,
+		// otherwise run its default function
+		when (currentObj) {
+			is PlayerShip -> newObjectBuffer.add(currentObj.pShipFun(window))
+			is EnemyShip -> newObjectBuffer.add(currentObj.eShipFun())
+			else -> currentObj.defaultFun()
+		}
+	}
+
+	// Remove any objects that are off-screen
+	var gameObjList = gameObjListIn.filter{!(abs(it.xPos.toDouble()) > 500 || abs(it.yPos.toDouble()) > 1400)}.toMutableList()
+
+	// Add new objects to the game list
+	// Null objects are filtered and not added to gameObjList
+	gameObjList += newObjectBuffer.filterNotNull()
+
+	// Check for any collisions
+	gameObjList = collisionChecks(gameObjList)
+
+	// Sort gameObjList in z order - This fixes layering issues
+	gameObjList = gameObjList.sortedBy{it.z} as MutableList<GameObj>
+	// Draw the frame
+	drawObjects(window, defaultShader, gameObjList)
+
+	return gameObjList
+}
+
+fun collisionChecks (gameObjList: MutableList<GameObj>) : MutableList<GameObj> {
+	// Prepare list of obj to remove
+	val removeObjBuffer = ArrayList<GameObj?>()
+
+	// Compare every object
+	for ((indexA, objA) in gameObjList.withIndex()){
+		var indexB = indexA + 1
 
 		// Run checks against all objects with a higher index
 		// This prevents two objects being compared twice
-		while (indexB < gameObjectList.size) {
-			val objB = gameObjectList[indexB]
+		while (indexB < gameObjList.size) {
+			val objB = gameObjList[indexB]
 
 			val xDist = objA.xPos - objB.xPos
 			val yDist = objA.yPos - objB.yPos
 			val absDist = sqrt((xDist*xDist) + (yDist*yDist))	// Calculate absolute distance between objects
 			val minSpace = objA.size + objB.size	// Objects' spacing if objects were perfectly flush
 
-			if (absDist < minSpace) {
-				// Some process that deals with a collision
-				TODO("Implement collision handling")
+			if (absDist < minSpace && objA.team != objB.team) {
+				// println("Collision between ${objA.javaClass} and ${objB.javaClass}")
+				removeObjBuffer += collisionHandle(objA, objB) // Currently, not implemented fully
 			}
 			indexB += 1
 		}
 	}
 
-	return gameObjectList
-}
-
-fun pShipFun(playerShip:PlayerShip, window: Long) : Projectile? {
-	var ret: Projectile? = null
-	// Decrease shooting cooldown
-	if (playerShip.bulletCooldown > 0) {playerShip.bulletCooldown -= 1}
-
-	// Process inputs
-	// y-input
-	if (glfwGetKey(window, GLFW_KEY_W) == glfwGetKey(window, GLFW_KEY_S)) {playerShip.ySpd = 0f}
-	else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {playerShip.ySpd = 5f}
-	// Otherwise, S-key must be pressed, but not W-key
-	else {playerShip.ySpd = -5f}
-
-	// x-input
-	if (glfwGetKey(window, GLFW_KEY_D) == glfwGetKey(window, GLFW_KEY_A)) {playerShip.xSpd = 0f}
-	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {playerShip.xSpd = 5f}
-	// Otherwise, S-key must be pressed, but not W-key
-	else {playerShip.xSpd = -5f}
-
-	// Move ship after processing WASD
-	playerShip.move()
-
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-		ret = playerShip.shoot()
+	for(obj in removeObjBuffer.filterNotNull()){
+		gameObjList.remove(obj)
 	}
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {TODO("Implement pause function")}
-
-	return ret	// Return the new Bullet?
+	return gameObjList
 }
 
-fun eShipFun(enemyShip: EnemyShip) : GameObject? {
-	// Move ship
-	enemyShip.move()
-
-	// Reduce shooting cooldown
-	enemyShip.bulletCooldown -= 1
-	// Attempt to shoot Bullet? and return it to calling fun
-	return enemyShip.shoot()
+// Handles collisions and returns which, if either, object should be removed
+fun collisionHandle(objA:GameObj, objB:GameObj): GameObj? {
+	return when(objA) {
+		is Projectile -> {
+			if(objB is PrimaryObject && objA.team != objB.team){
+				objB.takeDamage(objA.damage)
+				objA
+			} else {null}
+		}
+		is PrimaryObject -> {
+			when(objB){
+				is Projectile -> objB
+				is PrimaryObject -> {objA.hp = 0; objB.hp = 0; null}
+				else -> null
+			}
+		}
+		else -> null
+	}
 }
 
