@@ -1,8 +1,18 @@
 package entities
 
 import kotlin.math.sqrt
+import kotlin.random.Random
 
-class Star : GeneralObj(1.0f, 1.0f, z=0.0f) {
+class Star : GeneralObj(5.0f, 5.0f, z=0.0f) {
+	private val random = Random(System.nanoTime())
+
+	init {
+		// Created at a random position
+	    xPos = (800 * random.nextFloat()) - 400
+		yPos = (2000 * random.nextFloat()) - 1000
+		ySpd = -5f
+	}
+
 	private val val1 = sqrt(0.75).toFloat()   // Value represents (surd 3) / 2, used to calc exact
 												 // positions for hexagon, purely for ease of editing
 	override val vertexData = floatArrayOf(
@@ -23,4 +33,10 @@ class Star : GeneralObj(1.0f, 1.0f, z=0.0f) {
 		0, 5, 6,
 		0, 6, 1
 	)
+
+	fun recycle() {
+		// Star will be given a new, random x-position at the top of the screen
+		xPos = (800 * random.nextFloat()) - 400
+		yPos = (300 * random.nextFloat()) + 1200
+	}
 }

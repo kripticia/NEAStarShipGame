@@ -3,7 +3,7 @@ package entities
 import org.lwjgl.glfw.GLFW.*
 
 class PlayerShip (xPos:Float, yPos:Float, private var bulletCooldown:Int = 0)
-    : PrimaryObject(100, 1, 50.0f, 45.0f, 60.0f, z=0.65f) {
+    : PrimaryObj(100, 1, 50.0f, 45.0f, 60.0f, z=0.65f) {
 
     init {
         this.xPos = xPos

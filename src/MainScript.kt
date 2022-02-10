@@ -4,6 +4,7 @@ import org.lwjgl.opengl.GL
 import org.lwjgl.opengl.GL45.*
 import org.lwjgl.opengl.GLUtil
 import org.lwjgl.system.MemoryUtil
+import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.math.abs
 import kotlin.math.sqrt
@@ -106,73 +107,111 @@ fun drawObjects(window:Long, defaultShader:Int, objList:List<GeneralObj>) {
 		}
 		else {obj.drawObject(wWidth, wHeight, defaultShader)}
 	}
-
-	glfwPollEvents()
-	glfwSwapBuffers(window)
 }
 
 fun inGameLoop(window:Long, defaultShader:Int) {
 	// Initialise the in-game setting
-	// Object list can be created locally to save required params/args
-	var gameObjList: MutableList<GameObj> = ArrayList()
+
+	// Used to spawn objects using random generation
+	val random = Random(System.nanoTime())
+
+	// Object lists for different object types
+	val starList :MutableList<Star> = ArrayList()
+	val gameObjList :MutableList<GameObj> = ArrayList()
+	// var uiObjList :MutableList<GameObj> = ArrayList()
 
 	// Create the player's ship
 	val playerShip = PlayerShip(0f, -500f)
 	gameObjList.add(playerShip)
 
-	// TEMPORARY - Enemy ship to test with
-	val enemyShip = EnemyShip(0f, 500f)
-	gameObjList.add(enemyShip)
+	// Place stars around the screen at random
+	for (i in 0..30) {starList.add(Star())}
+
+	var lastSpawnTime = 0.0
+	var nextSpawnDelay = 1 + (7 * random.nextDouble())
+
+	var enemiesKilled = 0
+	// Game uses "window open" time to track how long the player has survived
+	// This is reset to zero when the loop starts
 
 	// Main cycle will run in here
 	while (!glfwWindowShouldClose(window) && playerShip.hp > 0) {
 		glClear(GL_COLOR_BUFFER_BIT)
 
-		gameObjList = processGameObjs(window, defaultShader, gameObjList)
+		// Spawn enemies after random intervals
+		if (glfwGetTime() - lastSpawnTime >= nextSpawnDelay) {
+			// Spawn a new ship
+			val xPos = (800 * random.nextFloat()) - 400
+			gameObjList.add(EnemyShip(xPos, 1000f))
+
+			lastSpawnTime = glfwGetTime()
+			// Spawn times will vary between 1 and 8 seconds
+			nextSpawnDelay = 1 + (7 * random.nextDouble())
+		}
+
+		processStars(window, defaultShader, starList)
+		enemiesKilled += processGameObjs(window, defaultShader, gameObjList)
 
 		// Check for pause
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 			TODO("Implement pause function")
 		}
 
+		glfwSwapBuffers(window)
+		glfwPollEvents()
 		// Limit to 60 fps
 		Thread.sleep(100/6.toLong())
 	}
 }
 
-fun processGameObjs(window: Long, defaultShader:Int, gameObjListIn:List<GameObj>) : MutableList<GameObj> {
-	// Create a buffer list for any newly made objects
-	val newObjectBuffer:MutableList<GameObj?> = ArrayList()
+fun processStars(window:Long, defaultShader: Int, starList:MutableList<Star>) {
+	for (star in starList) {
+		star.move()
+		if(star.yPos < -1100f) {
+			star.recycle()
+		}
+	}
+	drawObjects(window, defaultShader, starList)
+}
 
-	for (currentObj in gameObjListIn) {
+fun processGameObjs(window: Long, defaultShader:Int, gameObjList:MutableList<GameObj>) : Int {
+	// Create buffer lists for adding objects after iterations
+	// This will avoid ConcurrentModificationException
+	val newObjBuffer:MutableList<GameObj?> = ArrayList()
+
+	// Keep track of whether any enemies are killed
+	var enemiesKilled = 0
+
+	for (currentObj in gameObjList) {
 		// Check for certain objects with unique cases,
 		// otherwise run its default function
 		when (currentObj) {
-			is PlayerShip -> newObjectBuffer.add(currentObj.pShipFun(window))
-			is EnemyShip -> newObjectBuffer.add(currentObj.eShipFun())
+			is PlayerShip -> newObjBuffer.add(currentObj.pShipFun(window))
+			is EnemyShip -> newObjBuffer.add(currentObj.eShipFun())
 			else -> currentObj.defaultFun()
 		}
 	}
 
-	// Remove any objects that are off-screen
-	var gameObjList = gameObjListIn.filter{!(abs(it.xPos.toDouble()) > 500 || abs(it.yPos.toDouble()) > 1400)}.toMutableList()
+	// Remove any objects that are now off-screen
+	gameObjList.filter{!(abs(it.xPos) > 500 || abs(it.yPos) > 1200)}
 
 	// Add new objects to the game list
 	// Null objects are filtered and not added to gameObjList
-	gameObjList += newObjectBuffer.filterNotNull()
+	gameObjList += (newObjBuffer.filterNotNull())
 
 	// Check for any collisions
-	gameObjList = collisionChecks(gameObjList)
+	// Objects can be removed within the procedure
+	enemiesKilled += collisionChecks(gameObjList)
 
 	// Sort gameObjList in z order - This fixes layering issues
-	gameObjList = gameObjList.sortedBy{it.z} as MutableList<GameObj>
+	gameObjList.sortedBy{it.z}
 	// Draw the frame
 	drawObjects(window, defaultShader, gameObjList)
 
-	return gameObjList
+	return enemiesKilled
 }
 
-fun collisionChecks (gameObjList: MutableList<GameObj>) : MutableList<GameObj> {
+fun collisionChecks (gameObjList: MutableList<GameObj>) : Int {
 	// Prepare list of obj to remove
 	val removeObjBuffer = ArrayList<GameObj?>()
 
@@ -191,32 +230,39 @@ fun collisionChecks (gameObjList: MutableList<GameObj>) : MutableList<GameObj> {
 			val minSpace = objA.size + objB.size	// Objects' spacing if objects were perfectly flush
 
 			if (absDist < minSpace && objA.team != objB.team) {
-				// println("Collision between ${objA.javaClass} and ${objB.javaClass}")
-				removeObjBuffer += collisionHandle(objA, objB) // Currently, not implemented fully
+				removeObjBuffer += collisionHandle(objA, objB)
 			}
 			indexB += 1
 		}
 	}
 
-	for(obj in removeObjBuffer.filterNotNull()){
-		gameObjList.remove(obj)
+	// Check for primary objects with no hp, and remove them
+	// Enemy kills will increment the kill counter
+	var enemiesKilled = 0
+	for (obj in gameObjList) {
+		if (obj is PrimaryObj && obj.hp <= 0) {
+			removeObjBuffer += obj
+			if (obj is EnemyShip) {enemiesKilled += 1}
+		}
 	}
-	return gameObjList
+
+	for (obj in removeObjBuffer) {gameObjList.remove(obj)}
+	return enemiesKilled
 }
 
 // Handles collisions and returns which, if either, object should be removed
 fun collisionHandle(objA:GameObj, objB:GameObj): GameObj? {
 	return when(objA) {
 		is Projectile -> {
-			if(objB is PrimaryObject && objA.team != objB.team){
+			if(objB is PrimaryObj){
 				objB.takeDamage(objA.damage)
 				objA
 			} else {null}
 		}
-		is PrimaryObject -> {
+		is PrimaryObj -> {
 			when(objB){
-				is Projectile -> objB
-				is PrimaryObject -> {objA.hp = 0; objB.hp = 0; null}
+				is Projectile -> {objA.takeDamage(objB.damage); objB}
+				is PrimaryObj -> {objA.hp = 0; objB.hp = 0; null}
 				else -> null
 			}
 		}

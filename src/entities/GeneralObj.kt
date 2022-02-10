@@ -56,7 +56,7 @@ abstract class GeneralObj (private val width:Float = 1.0f, private val height:Fl
             0.0f, 0.0f, 0.0f, 1.0f
         )
         val view = floatArrayOf(
-            wHeight.toFloat()/wWidth.toFloat(), 0.0f, 0.0f, 0.0f,
+            wRatio, 0.0f, 0.0f, 0.0f,
             0.0f, 1.0f, 0.0f, 0.0f,
             0.0f, 0.0f, 1.0f, 0.0f,
             0.0f, 0.0f, 0.0f, 1.0f

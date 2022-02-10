@@ -1,7 +1,7 @@
 package entities
 
 class EnemyShip(xPos:Float, yPos:Float, private var bulletCooldown:Int = 0)
-    : PrimaryObject(50, 2, 50.0f, 45.0f, 60.0f, z=0.65f) {
+    : PrimaryObj(50, 2, 50.0f, 45.0f, 60.0f, z=0.65f) {
 
     init {
         this.ySpd = -2.5f
@@ -37,7 +37,7 @@ class EnemyShip(xPos:Float, yPos:Float, private var bulletCooldown:Int = 0)
             newBullet = Bullet(xPos, yPos, xSpd, -20.0f, 2)
 
             // Reset shot cooldown
-            bulletCooldown = 20
+            bulletCooldown = 60
         }
         else {
             newBullet = null
