@@ -4,20 +4,22 @@ import org.lwjgl.opengl.GL45.*
 import kotlin.math.cos
 import kotlin.math.sin
 
-abstract class GeneralObj (private val width:Float = 1.0f, private val height:Float = 1.0f,         // w/h for drawing
+abstract class GeneralObj (vertexData:FloatArray, indices:IntArray,                                 // Data for drawing
+                           private val width:Float = 1.0f, private val height:Float = 1.0f,         // w/h for drawing
                            val shader:Int?=null, val z:Float = 0.5f,                                // More for drawing
                            var xPos:Float = 0.0f, var yPos:Float = 0.0f, var rotation:Float = 0.0f, // Orientation
                            var xSpd:Float = 0.0f, var ySpd:Float = 0.0f)                            // Default speeds
 {
-    abstract val vertexData:FloatArray
-    abstract val indices:IntArray
 
-    fun drawObject(wWidth:Int, wHeight:Int, shaderProgram:Int) {
-        // Create buffer/array objects
-        val vbo = glGenBuffers()
-        val vao = glGenVertexArrays()
-        val ebo = glGenBuffers()
 
+    // Create buffer/array objects
+    private val vbo = glGenBuffers()
+    private val vao = glGenVertexArrays()
+    private val ebo = glGenBuffers()
+    private val indicesSize = indices.size
+
+    init {
+        // Create object's graphics data upon initialisation
         // Bind data to buffers
         glBindVertexArray(vao)
 
@@ -34,6 +36,10 @@ abstract class GeneralObj (private val width:Float = 1.0f, private val height:Fl
         // Colour attribute
         glVertexAttribPointer(1, 3, GL_FLOAT, false, 24, 12)
         glEnableVertexAttribArray(1)
+    }
+
+    fun drawObject(wWidth:Int, wHeight:Int, shaderProgram:Int) {
+
 
         val wRatio = wHeight/wWidth.toFloat()
 
@@ -74,7 +80,7 @@ abstract class GeneralObj (private val width:Float = 1.0f, private val height:Fl
 
         // Draw object
         glBindVertexArray(vao)
-        glDrawElements(GL_TRIANGLES, indices.size, GL_UNSIGNED_INT, 0)
+        glDrawElements(GL_TRIANGLES, indicesSize, GL_UNSIGNED_INT, 0)
         glBindVertexArray(0)
     }
 

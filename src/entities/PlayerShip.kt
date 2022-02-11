@@ -2,25 +2,26 @@ package entities
 
 import org.lwjgl.glfw.GLFW.*
 
+private const val z = 0.7f
+private val vertexData = floatArrayOf(
+    //  Position              Colour
+    0.0f, 1.0f, z,       0.0f, 1.0f, 0.0f,   // Top-middle       (Front)
+    0.0f, -0.5f, z,      0.0f, 1.0f, 0.0f,   // Bottom-middle    (Back)
+    -1.0f, -1.0f, z,     0.0f, 1.0f, 0.0f,   // Bottom-left      (Left wingtip)
+    1.0f, -1.0f, z,      0.0f, 1.0f, 0.0f    // Bottom-right     (Right wingtip)
+)
+private val indices = intArrayOf(
+    0, 1, 2,
+    0, 1, 3
+)
+
 class PlayerShip (xPos:Float, yPos:Float, private var bulletCooldown:Int = 0)
-    : PrimaryObj(100, 1, 50.0f, 45.0f, 60.0f, z=0.65f) {
+    : PrimaryObj(vertexData, indices, 45f, 60f, null, z, 100, 1) {
 
     init {
         this.xPos = xPos
         this.yPos = yPos
     }
-
-    override val vertexData:FloatArray = floatArrayOf(
-        //  Position              Colour
-        0.0f, 1.0f, z,       0.0f, 1.0f, 0.0f,   // Top-middle       (Front)
-        0.0f, -0.5f, z,      0.0f, 1.0f, 0.0f,   // Bottom-middle    (Back)
-        -1.0f, -1.0f, z,     0.0f, 1.0f, 0.0f,   // Bottom-left      (Left wingtip)
-        1.0f, -1.0f, z,      0.0f, 1.0f, 0.0f    // Bottom-right     (Right wingtip)
-    )
-    override val indices: IntArray = intArrayOf(
-        0, 1, 2,
-        0, 1, 3
-    )
 
     fun pShipFun(window: Long): Projectile? {
         // Process inputs

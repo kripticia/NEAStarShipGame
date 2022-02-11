@@ -111,6 +111,7 @@ fun drawObjects(window:Long, defaultShader:Int, objList:List<GeneralObj>) {
 
 fun inGameLoop(window:Long, defaultShader:Int) {
 	// Initialise the in-game setting
+	glClear(GL_COLOR_BUFFER_BIT)
 
 	// Used to spawn objects using random generation
 	val random = Random(System.nanoTime())
