@@ -179,22 +179,23 @@ fun processGameObjs(window: Long, defaultShader:Int, gameObjList:MutableList<Gam
 	// Create buffer lists for adding objects after iterations
 	// This will avoid ConcurrentModificationException
 	val newObjBuffer:MutableList<GameObj?> = ArrayList()
+	val removeObjBuffer:MutableList<GameObj> = ArrayList()
 
 	// Keep track of whether any enemies are killed
 	var enemiesKilled = 0
 
-	for (currentObj in gameObjList) {
+	for (obj in gameObjList) {
 		// Check for certain objects with unique cases,
 		// otherwise run its default function
-		when (currentObj) {
-			is PlayerShip -> newObjBuffer.add(currentObj.pShipFun(window))
-			is EnemyShip -> newObjBuffer.add(currentObj.eShipFun())
-			else -> currentObj.defaultFun()
+		when (obj) {
+			is PlayerShip -> newObjBuffer.add(obj.pShipFun(window))
+			is EnemyShip -> newObjBuffer.add(obj.eShipFun())
+			else -> obj.defaultFun()
 		}
+		// Remove any objects that are now off-screen
+		if (abs(obj.xPos) > 450 || abs(obj.yPos) > 1200){removeObjBuffer.add(obj)}
 	}
-
-	// Remove any objects that are now off-screen
-	gameObjList.filter{!(abs(it.xPos) > 500 || abs(it.yPos) > 1200)}
+	for (obj in removeObjBuffer) {gameObjList.remove(obj)}
 
 	// Add new objects to the game list
 	// Null objects are filtered and not added to gameObjList

@@ -39,8 +39,6 @@ abstract class GeneralObj (vertexData:FloatArray, indices:IntArray,             
     }
 
     fun drawObject(wWidth:Int, wHeight:Int, shaderProgram:Int) {
-
-
         val wRatio = wHeight/wWidth.toFloat()
 
         val scale = floatArrayOf(
